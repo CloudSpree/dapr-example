@@ -1,0 +1,38 @@
+version: '3'
+services:
+  
+  app:
+    build: ./
+    ports:
+      - "8080:8080"
+      - "50001:50001"
+    depends_on:
+      - redis
+      - placement
+  
+  app-dapr:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+     "--app-id", "app",
+     "--app-port", "8080",
+     "--placement-host-address", "placement:50006",
+     "--resources-path", "./components",
+     "--log-level", "debug",
+     ]
+    volumes:
+        - "./components/:/components"
+    depends_on:
+      - app
+    network_mode: "service:app" # Attach the app-dapr service to the app network namespace
+
+  redis:
+    image: "redis"
+    ports:
+      - "6379:6379"
+
+  placement:
+    image: "daprio/dapr"
+    command: ["./placement", "--port", "50006"]
+    ports:
+      - "50006:50006"
